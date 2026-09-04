@@ -1,0 +1,177 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CipherBench &mdash; AES Text Encryption</title>
+
+  <!-- Google Fonts: Space Grotesk for display/UI text, IBM Plex Mono for ciphertext & technical data -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+
+  <!-- CryptoJS via CDN: provides AES, PBKDF2, WordArray, and encoding utilities -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.2.0/crypto-js.min.js"></script>
+
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <div class="scanline-overlay" aria-hidden="true"></div>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L4 5v6c0 5 3.4 8.7 8 11 4.6-2.3 8-6 8-11V5l-8-3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/>
+            <path d="M9 12.2l2.1 2.1L15.5 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </span>
+        <span class="brand-name">CipherBench</span>
+      </div>
+      <p class="brand-tagline">Client-side AES-256 encryption &mdash; nothing you type ever leaves this browser tab.</p>
+    </div>
+  </header>
+
+  <main class="app-shell">
+
+    <!-- Shared secret key input, used by both encrypt and decrypt operations -->
+    <section class="key-panel" aria-labelledby="key-heading">
+      <label for="password" id="key-heading" class="field-label">
+        Encryption key
+        <span class="field-hint">A password only you know &mdash; it is never stored or transmitted.</span>
+      </label>
+      <div class="key-input-row">
+        <input
+          type="password"
+          id="password"
+          class="key-input"
+          placeholder="Enter a strong passphrase&hellip;"
+          autocomplete="off"
+        />
+        <button type="button" id="togglePassword" class="icon-btn" aria-label="Show password" aria-pressed="false">
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z" stroke="currentColor" stroke-width="1.6"/>
+            <circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="1.6"/>
+          </svg>
+        </button>
+      </div>
+      <p id="passwordError" class="field-error" role="alert"></p>
+    </section>
+
+    <div class="console-grid">
+
+      <!-- ENCRYPT PANEL -->
+      <section class="panel" aria-labelledby="encrypt-heading">
+        <div class="panel-head">
+          <h2 id="encrypt-heading">Encrypt</h2>
+          <span class="panel-index">01</span>
+        </div>
+
+        <label for="plainText" class="field-label">Plain text</label>
+        <textarea
+          id="plainText"
+          class="text-area"
+          placeholder="Type or paste the message you want to protect&hellip;"
+          rows="6"
+        ></textarea>
+        <p id="plainTextError" class="field-error" role="alert"></p>
+
+        <div class="btn-row">
+          <button type="button" id="encryptBtn" class="btn btn-primary">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l8 3v6c0 5-3.4 8.7-8 11-4.6-2.3-8-6-8-11V5l8-3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/></svg>
+            Encrypt
+          </button>
+          <button type="button" id="clearEncrypt" class="btn btn-ghost">Clear</button>
+        </div>
+
+        <label for="encryptedOutput" class="field-label output-label">
+          Encrypted output
+          <span class="field-hint">Base64 &mdash; contains a fresh salt + IV bundled with the ciphertext</span>
+        </label>
+        <div class="output-wrap">
+          <textarea id="encryptedOutput" class="text-area mono output-area" rows="5" readonly placeholder="Your ciphertext will appear here&hellip;"></textarea>
+          <button type="button" id="copyEncrypted" class="btn btn-copy" data-target="encryptedOutput">Copy</button>
+        </div>
+      </section>
+
+      <!-- DECRYPT PANEL -->
+      <section class="panel" aria-labelledby="decrypt-heading">
+        <div class="panel-head">
+          <h2 id="decrypt-heading">Decrypt</h2>
+          <span class="panel-index">02</span>
+        </div>
+
+        <label for="cipherInput" class="field-label">Ciphertext</label>
+        <textarea
+          id="cipherInput"
+          class="text-area mono"
+          placeholder="Paste an encrypted Base64 bundle&hellip;"
+          rows="6"
+        ></textarea>
+        <p id="cipherInputError" class="field-error" role="alert"></p>
+
+        <div class="btn-row">
+          <button type="button" id="decryptBtn" class="btn btn-primary btn-alt">
+            <svg viewBox="0 0 24 24" width="16" height="16" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M12 2l8 3v6c0 5-3.4 8.7-8 11-4.6-2.3-8-6-8-11V5l8-3z" stroke="currentColor" stroke-width="1.6" stroke-linejoin="round"/><path d="M9 12.2l2.1 2.1L15.5 10" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Decrypt
+          </button>
+          <button type="button" id="clearDecrypt" class="btn btn-ghost">Clear</button>
+        </div>
+
+        <label for="decryptedOutput" class="field-label output-label">
+          Decrypted output
+          <span class="field-hint">Recovered exactly as originally entered</span>
+        </label>
+        <div class="output-wrap">
+          <textarea id="decryptedOutput" class="text-area output-area" rows="5" readonly placeholder="Your original message will appear here&hellip;"></textarea>
+          <button type="button" id="copyDecrypted" class="btn btn-copy" data-target="decryptedOutput">Copy</button>
+        </div>
+      </section>
+
+    </div>
+
+    <!-- Status / toast messages for validation and errors -->
+    <div id="statusBar" class="status-bar" role="status" aria-live="polite"></div>
+
+    <!-- Educational reference section -->
+    <section class="learn-section" aria-labelledby="learn-heading">
+      <h2 id="learn-heading">How this actually protects your text</h2>
+      <p class="learn-intro">
+        Every term below maps to a real step this page performs in your browser, using the CryptoJS library. Open the JavaScript console or read <code>script.js</code> to see it happen.
+      </p>
+
+      <div class="learn-grid">
+        <article class="learn-card">
+          <h3>AES encryption</h3>
+          <p>The Advanced Encryption Standard is a symmetric cipher: the same key locks and unlocks the data. This app uses AES-256 in CBC mode, one of the most widely trusted encryption standards in the world, used everywhere from banking to government communications.</p>
+        </article>
+        <article class="learn-card">
+          <h3>Salt</h3>
+          <p>A salt is random data mixed into your password before it becomes a key. It stops attackers from using precomputed password tables (rainbow tables) and guarantees that two people using the identical password still end up with completely different encryption keys.</p>
+        </article>
+        <article class="learn-card">
+          <h3>IV (Initialization Vector)</h3>
+          <p>The IV is a random block fed into the cipher alongside the key. It randomizes the very first block of encryption so that repeating patterns in your plaintext don't produce repeating patterns in your ciphertext.</p>
+        </article>
+        <article class="learn-card">
+          <h3>PBKDF2</h3>
+          <p>Password-Based Key Derivation Function 2 turns your password into a proper cryptographic key by hashing it thousands of times with the salt. The extra work is intentional: it makes brute-force password guessing dramatically slower for an attacker.</p>
+        </article>
+        <article class="learn-card learn-card-wide">
+          <h3>Why identical input never looks the same twice</h3>
+          <p>Each time you press Encrypt, this page generates a brand-new random salt and a brand-new random IV, then derives a fresh key from them. Same message, same password, different randomness in, different ciphertext out &mdash; every single time. The salt and IV aren't secret, so they travel bundled with the ciphertext, letting Decrypt rebuild the exact same key later without ever storing your password anywhere.</p>
+        </article>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="site-footer">
+    <p>Built for demonstration purposes &middot; AES-256-CBC &middot; PBKDF2-SHA256 &middot; 100,000 iterations &middot; runs entirely client-side</p>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
